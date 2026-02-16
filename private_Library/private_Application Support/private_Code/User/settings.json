@@ -1,0 +1,36 @@
+{
+    "editor.renderWhitespace": "all",
+    "editor.formatOnPaste": true,
+    "breadcrumbs.enabled": true,
+    "workbench.colorTheme": "Material Theme Darker High Contrast",
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "workbench.iconTheme": "material-icon-theme",
+    "gitlens.advanced.abbreviatedShaLength": 6,
+    "editor.fontSize": 16,
+    "editor.tokenColorCustomizations": {
+        "comments": "#555555"
+    },
+    "sync.gist": "6ad8b703c5f4e25fa4b2a158c0ca7e4b",
+    "git.autofetch": true,
+    "git.ignoreMissingGitWarning": true,
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "mssql.connections": [
+        {
+            "server": "{{put-server-name-here}}",
+            "database": "{{put-database-name-here}}",
+            "user": "{{put-username-here}}",
+            "password": "{{put-password-here}}"
+        }
+    ],
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[python]": {
+        "editor.formatOnType": true
+    },
+    "explorer.confirmDragAndDrop": false
+}

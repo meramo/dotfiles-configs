@@ -1,0 +1,25 @@
+[user]
+	name = Igor Kandyba
+	email = igor.kandyba@gmail.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	autocrlf = input
+	editor = vim
+
+[credential]
+	helper = osxkeychain
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	lg = log --oneline --graph --decorate --all
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
