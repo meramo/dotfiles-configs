@@ -106,3 +106,9 @@ Adjust commands to match whatever CI runs (e.g., `pytest` for Python, `go vet &&
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+
+# Git Identity
+
+- **Always commit as:** Igor Kandyba <igor.kandyba@gmail.com>
+- **Never** add `Co-Authored-By` trailers or use any other author identity
+- If in doubt about which identity to use, **ask the user before committing**
