@@ -1,0 +1,32 @@
+#!/bin/bash
+# Set up symlink from Claude Code's project-specific memory path
+# to the chezmoi-managed shared-memory directory.
+#
+# Claude Code stores per-project memory at:
+#   ~/.claude/projects/<encoded-working-dir>/memory/
+# where the home directory path has "/" replaced with "-".
+# This script creates the symlink so memory syncs across machines.
+
+set -eu
+
+encoded_home=$(echo "{{ .chezmoi.homeDir }}" | sed 's|/|-|g')
+project_dir="{{ .chezmoi.homeDir }}/.claude/projects/${encoded_home}"
+memory_link="${project_dir}/memory"
+shared_memory="{{ .chezmoi.homeDir }}/.claude/shared-memory"
+
+mkdir -p "${project_dir}"
+
+# If memory is currently a real directory, move any files not already in shared-memory
+if [ -d "${memory_link}" ] && [ ! -L "${memory_link}" ]; then
+    for f in "${memory_link}"/*; do
+        [ -e "$f" ] || continue
+        basename=$(basename "$f")
+        if [ ! -e "${shared_memory}/${basename}" ]; then
+            cp "$f" "${shared_memory}/${basename}"
+        fi
+    done
+    rm -rf "${memory_link}"
+fi
+
+# Create the symlink
+ln -sfn "${shared_memory}" "${memory_link}"
