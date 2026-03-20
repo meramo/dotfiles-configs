@@ -1,0 +1,78 @@
+{
+  "env": {
+    "NIMBLE_API_KEY": "{{ .nimbleApiKey }}"
+  },
+  "enabledPlugins": {
+    "nimble@nimble-plugin-marketplace": true
+  },
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    }
+  },
+  "voiceEnabled": false,
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(*ls *)",
+      "Bash(curl:*)",
+      "Bash(*curl *)",
+      "Bash(cat:*)",
+      "Bash(*cat *)",
+      "Bash(head:*)",
+      "Bash(*head *)",
+      "Bash(tail:*)",
+      "Bash(*tail *)",
+      "Bash(echo:*)",
+      "Bash(*echo *)",
+      "Bash(pwd:*)",
+      "Bash(*pwd*)",
+      "Bash(whoami:*)",
+      "Bash(*whoami*)",
+      "Bash(which:*)",
+      "Bash(*which *)",
+      "Bash(env:*)",
+      "Bash(*env *)",
+      "Bash(date:*)",
+      "Bash(*date*)",
+      "Bash(wc:*)",
+      "Bash(*wc *)",
+      "Bash(du:*)",
+      "Bash(*du *)",
+      "Bash(df:*)",
+      "Bash(*df *)",
+      "Bash(file:*)",
+      "Bash(*file *)",
+      "Bash(uname:*)",
+      "Bash(*uname*)",
+      "Bash(hostname:*)",
+      "Bash(*hostname*)",
+      "Bash(ps:*)",
+      "Bash(*ps *)",
+      "Bash(top:*)",
+      "Bash(free:*)",
+      "Bash(uptime:*)",
+      "Bash(*uptime*)",
+      "Bash(grep:*)",
+      "Bash(*grep *)",
+      "Bash(find:*)",
+      "Bash(*find *)",
+      "Bash(tree:*)",
+      "Bash(*tree *)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(git remote*)",
+      "Bash(*git status*)",
+      "Bash(*git log*)",
+      "Bash(*git diff*)",
+      "Bash(*git show*)"
+    ]
+  }
+}
