@@ -1,45 +1,77 @@
+Behavioral guidelines for all projects. These bias toward caution over speed — for trivial tasks, use judgment. Project-specific instructions should be layered on top via project `CLAUDE.md` files.
+
 # Workflow Orchestration
 
 ## 1. Plan Mode Default
 
 - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan immediately - don't keep pushing
+- If something goes sideways, STOP and re-plan immediately — don't keep pushing
 - Use plan mode for verification steps, not just building
 - Write detailed specs upfront to reduce ambiguity
 
-## 2. Subagent Strategy
+## 2. Think Before Coding
 
-- Use subagents liberally to keep main context window clean
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 3. Subagent Strategy
+
+- Use subagents liberally to keep the main context window clean
 - Offload research, exploration, and parallel analysis to subagents
 - For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
 
-## 3. Self-Improvement Loop
+## 4. Self-Improvement Loop
 
 - After ANY correction from the user: update `tasks/lessons.md` with the pattern
 - Write rules for yourself that prevent the same mistake
 - Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
+- Review lessons at session start for the relevant project
 
-## 4. Verification Before Done
+## 5. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 6. Verification Before Done
 
 - Never mark a task complete without proving it works
 - Diff behavior between main and your changes when relevant
 - Ask yourself: "Would a staff engineer approve this?"
 - Run tests, check logs, demonstrate correctness
-- **Before every git commit**, run the project's CI checks locally (lint, typecheck, tests). Never let broken code reach GitHub Actions. If the project has a `precommit` script, run it. If not, run `npm run lint && npx tsc --noEmit && npm test -- --bail` (or equivalent).
+- **Before every git commit**, run the project's CI checks locally (lint, typecheck, tests). Never let broken code reach CI. If the project has a `precommit` script, run it; otherwise run the equivalent checks for the stack.
+- **Verify write-read symmetry**: After implementing any write path (API POST, file write, DB insert), immediately trace the full read path that should surface the data. Confirm no filters drop it, no caches hide it, no format mismatches lose it. A successful write means nothing if the data never appears.
 
-## 5. Demand Elegance (Balanced)
+## 7. Demand Elegance (Balanced)
 
 - For non-trivial changes: pause and ask "is there a more elegant way?"
 - If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes - don't over-engineer
+- Skip this for simple, obvious fixes — don't over-engineer
 - Challenge your own work before presenting it
 
-## 6. Autonomous Bug Fixing
+## 8. Autonomous Bug Fixing
 
 - When given a bug report, just fix it. Don't ask for hand-holding
-- Point at logs, errors, failing tests - then resolve them
+- Point at logs, errors, failing tests — then resolve them
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
@@ -52,63 +84,71 @@
 5. **Document Results**: Add review section to `tasks/todo.md`
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 
-# React / React Native Guardrails
+# Pre-Commit Hooks
 
-## State Initialization
-- **Never leave parent state as `null` when data is available to initialize it.** If a parent component has data (e.g., `cards` from a hook), initialize derived state eagerly via `useEffect` in the parent — don't rely on a child component's effect to call back and set it. Child effects fire after render, creating a visible gap where dependent UI is missing.
-- **Don't use derived booleans as useEffect dependencies.** `[items.length > 0]` collapses all non-empty arrays into `true`, so the effect won't re-fire when the array changes identity. Use the actual data reference: `[items]`.
+For every project, set up a git pre-commit hook that mirrors CI. Broken code should never reach CI.
 
-## Verify the Mount Path
-- **Always mentally trace the first render frame.** The initial mount sequence (loading → content → effects fire → re-render) is the most fragile and the first thing users see. Ask: "What does the user see on frame 1 after content appears?" If any UI depends on state set by effects, there will be a flash of missing content.
-- **Test initial load, not just steady-state.** Bugs that only manifest during the first few frames after mount are easy to miss when reasoning about the "user interacts → state updates → UI updates" steady-state flow.
+1. Inspect the project's CI config to learn what checks run
+2. Create an executable `.git/hooks/pre-commit` that runs the same checks
+3. Expose a `precommit` script (or equivalent) for manual runs
 
-# Pre-Commit Hook Standard
+The principle: **if CI checks it, the hook checks it.** Adapt commands to the stack (npm, pytest, go test, cargo, etc.).
 
-**For every project**, set up a git pre-commit hook that mirrors CI. This is non-negotiable — broken code should never reach GitHub Actions.
+# Data Integrity Guardrails
 
-## Setup (do this when starting work on any new project)
+## Write-Read Symmetry
+Every data write MUST have a verified read path. Before declaring a feature done:
+1. **Trace the round-trip**: Data written → storage → query/filter → API response → UI render. Walk every step.
+2. **Check for silent filters**: Scan for any filtering, conditional skips, required-field checks, cache TTLs, or format checks between the write and the read. Any of these can silently drop data.
+3. **Verify across storage layers**: If the system has multiple stores (cache + DB, local + remote, primary + replica), verify the data appears in all of them. A local write that skips the remote store means the deployed system sees nothing.
+4. **Verify the UI, not just the API**: A successful write response is not proof the feature works. Confirm the data renders where the user expects it — including the right bucket, group, or filter.
 
-1. Check if `.github/workflows/` exists — read the CI config to know what checks run
-2. Create `.git/hooks/pre-commit` (executable) that runs the same checks
-3. Add a `precommit` script to `package.json` for manual runs
-
-## Template
-
-```bash
-#!/bin/bash
-# Pre-commit hook: mirrors CI checks locally
-set -e
-
-echo "🔍 Pre-commit checks..."
-
-# 1. Lint (adjust command per project)
-echo "━━━ Lint ━━━"
-npm run lint 2>&1
-echo "✅ Lint passed"
-
-# 2. Type check (TypeScript projects)
-echo "━━━ TypeScript ━━━"
-npx tsc --noEmit 2>&1
-echo "✅ TypeScript passed"
-
-# 3. Tests
-echo "━━━ Tests ━━━"
-npm test -- --bail --silent 2>&1
-echo "✅ Tests passed"
-
-echo "✅ All pre-commit checks passed!"
-```
-
-Adjust commands to match whatever CI runs (e.g., `pytest` for Python, `go vet && go test` for Go). The principle is: **if CI checks it, the hook checks it**.
+## New Format Compatibility
+When introducing a new data format or relaxing constraints:
+- **Audit all consumers**: Find every place the old format is read, filtered, or parsed. Each one is a potential silent failure.
+- **Check serialization boundaries**: If state is persisted (storage, cookies, caches, config), ensure old serialized values don't break with the new format. Add validation on deserialization.
+- **Existing query params and flags**: A new write format that bypasses an existing read-side filter is the #1 cause of "data disappears" bugs.
 
 # Core Principles
 
-- **Simplicity First**: Make every change as simple as possible. Impact minimal code.
-- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
-- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+## Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked
+- No abstractions for single-use code
+- No "flexibility" or "configurability" that wasn't requested
+- No error handling for impossible scenarios
+- If you write 200 lines and it could be 50, rewrite it
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting
+- Don't refactor things that aren't broken
+- Match existing style, even if you'd do it differently
+- If you notice unrelated dead code, mention it — don't delete it
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused
+- Don't remove pre-existing dead code unless asked
+
+The test: every changed line should trace directly to the user's request.
+
+## No Laziness
+
+Find root causes. No temporary fixes. Senior developer standards.
 
 # Git Identity
 
 - **Always commit as:** Igor Kandyba <igor.kandyba@gmail.com>
 - **Never** add `Co-Authored-By` trailers or use any other author identity
 - If in doubt about which identity to use, **ask the user before committing**
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
